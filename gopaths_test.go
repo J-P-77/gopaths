@@ -1,8 +1,7 @@
 package gopaths
 
 import (
-	"os"
-	//"fmt"
+	"os"	
 	"testing"
 )
 

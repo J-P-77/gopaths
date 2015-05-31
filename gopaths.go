@@ -11,9 +11,7 @@ type PATH []byte
 func (p *PATH) Exists() bool {
 	_, err := os.Stat(string(*p))
 	
-	if err == nil {return true}
-	
-	return os.IsNotExist(err)
+	return err == nil || os.IsExist(err)
 }
 
 func(p *PATH) Create() (file *os.File, err error) {
@@ -24,6 +22,12 @@ func(p *PATH) Create() (file *os.File, err error) {
 
 func(p *PATH) Open() (file *os.File, err error) {
 	file, err = os.Open(string(*p))
+	
+	return file, err
+}
+
+func(p *PATH) OpenFile(flag int, perm os.FileMode) (file *os.File, err error) {
+	file, err = os.OpenFile(string(*p), flag, perm)
 	
 	return file, err
 }
@@ -59,3 +63,25 @@ func(p *PATH) ToAbsolutePath() PATH {
 	
 	return PATH(tmppath)
 }
+
+func(p *PATH) Mkdir(perm os.FileMode) error {
+	return os.Mkdir(string(*p), perm)
+}
+
+func(p *PATH) MkdirAll(perm os.FileMode) error {
+	return os.MkdirAll(string(*p), perm)
+}
+
+func(p *PATH) IsDir() bool {
+	stat, err := os.Stat(string(*p))
+	
+	if err == nil || os.IsExist(err) {
+		return stat.IsDir()
+	} 
+	
+	return false
+}
+
+/*func(p *PATH) list() []PATH {
+
+}*/
