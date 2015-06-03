@@ -4,32 +4,36 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"io/ioutil"
 )
 
-type PATH []byte
+const (
+	_S_ = os.PathSeparator
+	_LS_ = os.PathListSeparator
+)
 
-func (p *PATH) Exists() bool {
+type PATH []byte//string
+//type OSFILE os.File
+//type FILEMODE uint32//os.FileMode
+
+func(p *PATH) Exists() bool {
 	_, err := os.Stat(string(*p))
 	
 	return err == nil || os.IsExist(err)
 }
 
-func(p *PATH) Create() (file *os.File, err error) {
-	file, err = os.Create(string(*p))
+func(p *PATH) Create() (file * os.File, err error) {
+	//file, err = os.Create(string(*p))//; return file, err
 	
-	return file, err
+	return os.Create(string(*p))
 }
 
 func(p *PATH) Open() (file *os.File, err error) {
-	file, err = os.Open(string(*p))
-	
-	return file, err
+	return os.Open(string(*p))
 }
 
 func(p *PATH) OpenFile(flag int, perm os.FileMode) (file *os.File, err error) {
-	file, err = os.OpenFile(string(*p), flag, perm)
-	
-	return file, err
+	return os.OpenFile(string(*p), flag, perm)
 }
 
 func(p *PATH) Join(paths ...string) PATH {
@@ -82,6 +86,17 @@ func(p *PATH) IsDir() bool {
 	return false
 }
 
-/*func(p *PATH) list() []PATH {
-
-}*/
+func(p *PATH) List() ([]PATH/*, []os.FileInfo, error*/) {
+	if p.IsDir() {
+		finfo, _ := ioutil.ReadDir(string(*p))
+	
+		paths := make([]PATH, len(finfo))
+		
+		for x, _ := range finfo {
+			paths[x] = PATH(finfo[x].Name())//p.Join(finfo[x].Name())
+		}
+		return paths//, finfo
+	} else {
+		return make([]PATH, 0) ///*make([]PATH, 0), make(os.FileInfo, 0)*/[0]PATH, [0]os.FileInfo
+	}
+}
