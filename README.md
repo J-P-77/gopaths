@@ -1,5 +1,3 @@
-Currently only a experiment.
-
 ````
 package main
 
@@ -9,12 +7,12 @@ import (
 )
 
 func main() {
-	fpath := PATH("Hello\\World\\text.txt")
+	path := gopaths.PATH("Hello\\World\\text.txt")
 	
-	if fpath.Exists()  {
+	if path.Exists()  {
 		fmt.Println("File exists")
 	} else {
-		f, _ := fpath.Create()
+		f, _ := path.OpenWrite()
 		
 		f.WriteString("Hello World")
 		
@@ -33,14 +31,14 @@ import (
 )
 
 func main() {
-	fpath := "Hello\\World\\text.txt"
+	path := "Hello\\World\\text.txt"
 	
-	_, err := os.Stat(fpath)
+	_, err := os.Stat(path)
 	
 	if err == nil || os.IsExist(err) {
 		fmt.Println("File exists")
 	} else {
-		f, err = os.Create(fpath)
+		f, _ = os.OpenWrite(path)	
 		
 		f.WriteString("Hello World")
 		
