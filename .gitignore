@@ -44,3 +44,5 @@ Temporary Items
 
 
 *.bat
+testdata
+project.ps1

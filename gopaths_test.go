@@ -1,111 +1,182 @@
 package gopaths
 
 import (
+
 	//"fmt"
 	"io/ioutil"
 	"os"
-	"strconv"
 	"testing"
 )
 
-func exists(path PATH, t *testing.T) {
-	if !path.Exists() {
-		t.Error("File does not exists " + path.ToAbsoluteString())
-	}
-}
-
-func TestExists(t *testing.T) {
-	d := PATH("C:\\Users\\Justin\\temp-dir")
-
-	if !d.Exists() {
-		t.Error("File does not exists " + d.ToAbsoluteString())
-	}
-}
-
-func TestIsDir(t *testing.T) {
-	d := PATH("C:\\Users\\Justin\\temp-dir")
-
-	if d.IsDir() == false {
-		t.Error("Path should be a directory")
+func TestChangeExtension(t *testing.T) {
+	type Test struct {
+		path, change, result string
 	}
 
-	f := PATH("C:\\Users\\Justin\\mac addresses.txt")
-
-	if f.IsDir() == true {
-		t.Error("Path should not be a directory")
+	tests := []Test{
+		Test{"youtube-files-dl.txt", ".go", "youtube-files-dl.go"},
+		Test{"youtube-files-dl", "go", "youtube-files-dl"},
+		Test{"youtube-files-dl", ".go", "youtube-files-dl"},
+		Test{".youtube-files-dl", ".go", ".go"},
+		Test{".", ".go", "."},
+		Test{"youtube-files-dl.txt", "d", "youtube-files-dl.d"},
+		Test{"youtube-files-dl.txt", ".d", "youtube-files-dl.d"},
 	}
 
-	t.Log("[isDir=" + strconv.FormatBool(d.IsDir()) + "] " + d.ToAbsoluteString())
-	t.Log("[isDir=" + strconv.FormatBool(f.IsDir()) + "] " + f.ToAbsoluteString())
+	for i, v := range tests {
+		path := PATH(v.path)
 
-}
-func TestToAbsolutePath(t *testing.T) {
-	f := PATH("HelloWorld\\Justin")
+		path = path.ChangeExtension(v.change)
 
-	wd, _ := os.Getwd()
-
-	if f.ToAbsoluteString() != wd+"\\HelloWorld\\Justin" {
-		t.Error("Paths Not Equal")
-	}
-}
-
-func TestOpenFile(t *testing.T) {
-	f := PATH("gopaths_test.go")
-
-	exists(f, t)
-
-	ofile, err := f.OpenFile(os.O_RDONLY, 0)
-	defer ofile.Close()
-
-	if err != nil {
-		t.Error("Error Opening file " + f.ToAbsoluteString())
-	} else {
-		_, err := ioutil.ReadAll(ofile)
-
-		if err != nil {
-			t.Error(err)
+		if path.ToString() != v.result {
+			t.Errorf("%v [%v]\n", i, path.ToString())
 		}
 	}
 }
 
-func TestJoinString(t *testing.T) {
-	f := PATH("HelloWorld\\Justin")
+func TestExists(t *testing.T) {
+	path := PATH(".\\testdata")
 
-	f = f.JoinString("gopaths_test.go")
-
-	if f.ToString() != "HelloWorld\\Justin\\gopaths_test.go" {
-		t.Error(f.ToString() + " != HelloWorld\\Justin\\gopaths_test.go")
+	if !path.Exists() {
+		t.Errorf("Path does not exists... %v", path.String())
 	}
 }
 
-func TestJoin(t *testing.T) {
-	a := PATH("HelloWorld\\Justin")
-	b := PATH("gopaths_test.go")
+func TestIsDir(t *testing.T) {
+	d := PATH(".\\testdata")
 
-	c := a.Join(b)
+	if !d.IsDir() {
+		t.Errorf("Path should be a directory... %v\n", d.String())
+	}
 
-	if c.ToString() != "HelloWorld\\Justin\\gopaths_test.go" {
-		t.Error(c.ToString() + " != HelloWorld\\Justin\\gopaths_test.go")
+	f := PATH(".\\testdata\\testfile.txt")
+
+	if f.IsDir() {
+		t.Errorf("Path should not be a directory... %v\n", d.String())
+	}
+}
+func TestToAbsolutePath(t *testing.T) {
+	type Test struct {
+		path, result string
+	}
+
+	wd, err := os.Getwd()
+
+	if err != nil {
+		t.Errorf("Failed to get working directory... %v\n", err)
+	}
+
+	tests := []Test{
+		Test{".\\testdata\\testfile.txt", wd + "\\testdata\\testfile.txt"},
+	}
+
+	for i, v := range tests {
+		path := PATH(v.path)
+
+		if path.ToAbsoluteString() != v.result {
+			t.Errorf("%v [%v]\n", i, path.String())
+		}
+	}
+}
+
+func TestOpenRead(t *testing.T) {
+	f := PATH(".\\testdata\\testfile.txt")
+
+	rfile, err := f.OpenRead()
+	defer rfile.Close()
+
+	if err != nil {
+		t.Error("Error Opening file " + f.ToAbsoluteString())
+	}
+
+	data, err := ioutil.ReadAll(rfile)
+
+	if err != nil {
+		t.Errorf("Failed reading file... %v\n", err)
+	}
+
+	const teststring = "This is just a test"
+	if string(data) != teststring {
+		t.Errorf("Failed reading file... [%v] does not match [%v]\n", err, teststring)
+	}
+}
+
+func TestJoinString(t *testing.T) {
+	type Test struct {
+		paths  []string
+		result string
+	}
+
+	tests := []Test{
+		Test{[]string{"test/", "\\test\\", "\\test\\"}, "test\\test\\test\\"},
+		Test{[]string{"\\test\\", "test/", "\\test\\"}, "\\test\\test\\test\\"},
+		Test{[]string{"\\test\\", "test", "\\test/"}, "\\test\\test\\test\\"},
+		Test{[]string{"c:\\test\\", "test", "\\test/"}, "c:\\test\\test\\test\\"},
+		Test{[]string{"C:\\test", "test", "test//test"}, "C:\\test\\test\\test\\test"},
+	}
+
+	for i, v := range tests {
+		path := PATH("")
+
+		for _, p := range v.paths {
+			path = path.JoinString(p)
+		}
+
+		if path.ToString() != v.result {
+			t.Errorf("%v Test:%v [%v] != [%v]\n", i, v.paths, path.ToString(), v.result)
+		}
+	}
+}
+func TestJoinStrings(t *testing.T) {
+	type Test struct {
+		paths  []string
+		result string
+	}
+
+	tests := []Test{
+		Test{[]string{"test/", "\\test\\", "\\test\\"}, "test\\test\\test\\"},
+		Test{[]string{"\\test\\", "test/", "\\test\\"}, "\\test\\test\\test\\"},
+		Test{[]string{"\\test\\", "test", "\\test/"}, "\\test\\test\\test\\"},
+		Test{[]string{"c:\\test\\", "test", "\\test/"}, "c:\\test\\test\\test\\"},
+		Test{[]string{"C:\\test", "test", "test//test"}, "C:\\test\\test\\test\\test"},
+	}
+
+	for i, v := range tests {
+		path := PATH("")
+
+		path = path.JoinStrings(v.paths...)
+
+		if path.ToString() != v.result {
+			t.Errorf("%v Test:%v [%v] != [%v]\n", i, v.paths, path.ToString(), v.result)
+		}
 	}
 }
 
 func TestIterFileInfos(t *testing.T) {
-	p := PATH("./")
-	//fmt.Println(p.ToString())
+	type Test struct {
+		path   string
+		result []string
+	}
 
-	for next, hasnext := p.IterFileInfos(); hasnext(); {
-		name := next().Name()
+	tests := []Test{
+		Test{".\\testdata\\testdir", []string{"1", "2.gotest", "3.txt"}},
+	}
 
-		t.Log(name)
+	for i, v := range tests {
+		p := PATH(v.path)
 
-		switch name {
-		case "gopaths.go":
-		case "gopaths_test.go":
-		case "README.md":
-		case "setup.bat":
-		case "test.bat":
-		default:
-			t.Error()
+		counter := 0
+		for next, hasNext := p.IterFileInfos(); hasNext(); {
+			name := next().Name()
+
+			if name == v.result[counter] {
+				t.Log(name)
+				counter++
+			}
+		}
+
+		if counter != len(v.result) {
+			t.Errorf("%v Test:%v Failed\n", i, p.String())
 		}
 	}
 }
@@ -138,8 +209,8 @@ func TestWalkDirPath(t *testing.T) {
 	goal := 368
 	p1 := PATH("C:\\Users\\Justin\\temp-dir\\build")
 
-	items := p1.WalkDirPath(func(PATH) bool {
-		return true
+	items := p1.WalkDirPath(func(PATH) (bool, bool) {
+		return false, true
 	},
 		func(PATH) bool {
 			return true
@@ -153,15 +224,6 @@ func TestWalkDirPath(t *testing.T) {
 
 		t.Fail()
 	}
-}
-
-func BenchmarkListString(b *testing.B) {
-	/*p := PATH("C:\\Users\\Justin")
-
-	b.ResetTimer()
-	for x := 0; x < b.N; x++ {
-		p.ListString()
-	}*/
 }
 
 func BenchmarkList(b *testing.B) {
